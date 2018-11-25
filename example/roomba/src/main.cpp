@@ -1,19 +1,28 @@
-# Roomba Component for ESPHomeLib
+// Auto generated code by esphomeyaml
+#include "esphomelib/application.h"
+#include "ESPHomeLibRoombaComponent.h"
 
-A barebones wrapper to enable control of a Roomba via ESPHomeLib.
-Tested with ESPHomeLib 1.9.1, and a Roomba 650 w/a Wemos D1 Mini installed.
+using namespace esphomelib;
 
-## Setup/Use
+void setup() {
+  // ===== DO NOT EDIT ANYTHING BELOW THIS LINE =====
+  // ========== AUTO GENERATED CODE BEGIN ===========
+  App.set_name("roomba");
+  App.set_compilation_datetime(__DATE__ ", " __TIME__);
+  ::LogComponent *_logcomponent = App.init_log(115200);
+  _logcomponent->set_global_log_level(ESPHOMELIB_LOG_LEVEL_INFO);
+  ::WiFiComponent *_wificomponent = App.init_wifi();
+  _wificomponent->set_sta(::WiFiAp{
+      .ssid = "My Wifi SSID",
+      .password = "My Wifi Password",
+      .channel = -1,
+  });
+  ::OTAComponent *_otacomponent = App.init_ota();
+  _otacomponent->start_safe_mode();
+  mqtt::MQTTClientComponent *mqtt_mqttclientcomponent = App.init_mqtt("mosquitto.org", 1883, "", "");
+  // =========== AUTO GENERATED CODE END ============
+  // ========= YOU CAN EDIT AFTER THIS LINE =========
 
-Take a look at the example directory for a fully working example (very close to my setup).
-
-In short:
-
-* Add `#include "ESPHomeLibRoombaComponent.h"` under the esphomelib include.
-
-* Add the following before `App.setup()`
-
-  ```c++
   auto *custom_roomba = new RoombaComponent(
       "Distance",
       "Voltage",
@@ -47,4 +56,11 @@ In short:
   App.register_switch(custom_roomba->dock_switch);
   App.register_switch(custom_roomba->locate_switch);
   App.register_switch(custom_roomba->spot_switch);
-  ```
+
+  App.setup();
+}
+
+void loop() {
+  App.loop();
+  delay(16);
+}

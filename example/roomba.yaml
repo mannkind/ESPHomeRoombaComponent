@@ -1,0 +1,18 @@
+esphomeyaml:
+  use_custom_code: True
+  name: roomba
+  platform: ESP8266
+  board: esp01_1m
+
+wifi:
+  ssid: "My Wifi SSID"
+  password: "My Wifi Password"
+
+mqtt:
+  broker: "mosquitto.org"
+  discovery: true
+
+logger:
+  level: info
+
+ota:

@@ -1,0 +1,3 @@
+.vscode
+example/roomba/.pio*
+example/roomba/.esphomelib_version
