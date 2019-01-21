@@ -1,18 +1,61 @@
 esphomeyaml:
-  use_custom_code: True
   name: roomba
   platform: ESP8266
   board: esp01_1m
+  includes:
+    - ../ESPHomeRoombaComponent.h
+  libraries:
+    - Roomba=http://www.airspayce.com/mikem/arduino/Roomba/Roomba-1.4.zip
 
 wifi:
   ssid: "My Wifi SSID"
   password: "My Wifi Password"
 
 mqtt:
-  broker: "mosquitto.org"
+  broker: "test.mosquitto.org"
   discovery: true
 
 logger:
   level: info
 
 ota:
+
+custom_component:
+ - lambda: |-
+    auto custom_roomba = new RoombaComponent(
+        "Roomba Distance",
+        "Roomba Voltage",
+        "Roomba Current",
+        "Roomba Charge",
+        "Roomba Capacity",
+        "Roomba Charging",
+        "Roomba Docked",
+        "Roomba Cleaning",
+        "Roomba On",
+        "Roomba Off",
+        "Roomba Dock",
+        "Roomba Locate",
+        "Roomba Spot Clean",
+        "roomba/command", /* command_topic */
+        4,                /* BRC Pin */
+        5000              /* Update Interval */
+      );
+
+    App.register_component(custom_roomba);
+    App.register_sensor(custom_roomba->distance_sensor);
+    App.register_sensor(custom_roomba->voltage_sensor);
+    App.register_sensor(custom_roomba->current_sensor);
+    App.register_sensor(custom_roomba->charge_sensor);
+    App.register_sensor(custom_roomba->capacity_sensor);
+    App.register_binary_sensor(custom_roomba->chargingState_sensor);
+    App.register_binary_sensor(custom_roomba->dockedState_sensor);
+    App.register_binary_sensor(custom_roomba->cleaningState_sensor);
+    App.register_switch(custom_roomba->on_switch);
+    App.register_switch(custom_roomba->off_switch);
+    App.register_switch(custom_roomba->dock_switch);
+    App.register_switch(custom_roomba->locate_switch);
+    App.register_switch(custom_roomba->spot_switch);
+
+    return {custom_roomba};
+
+switch:

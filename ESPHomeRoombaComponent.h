@@ -1,10 +1,8 @@
-#include "esphomelib/application.h"
+#include "esphomelib.h"
 #include <Roomba.h>
-
 using namespace esphomelib;
 
 static const char *TAG = "component.Roomba";
-
 Roomba roomba(&Serial, Roomba::Baud115200);
 void roombaWakeup(uint8_t pin)
 {
@@ -242,7 +240,7 @@ class RoombaComponent : public PollingComponent
         roomba.start();
 
         ESP_LOGD(TAG, "Attempting to subscribe to MQTT.");
-        mqtt::global_mqtt_client->subscribe(this->commandTopic, [&](const std::string &payload) {
+        mqtt::global_mqtt_client->subscribe(this->commandTopic, [&](const std::string &topic, const std::string &payload) {
             ESP_LOGD(TAG, "Got values %s", payload.c_str());
             if (payload == "turn_on")
             {
