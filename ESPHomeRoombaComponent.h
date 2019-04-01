@@ -1,4 +1,4 @@
-#include "esphomelib.h"
+#include "esphome.h"
 #include <Roomba.h>
 using namespace esphomelib;
 
@@ -318,13 +318,29 @@ class RoombaComponent : public PollingComponent
         dockedState = current > -50;
         chargingState = charging == Roomba::ChargeStateReconditioningCharging || charging == Roomba::ChargeStateFullChanrging || charging == Roomba::ChargeStateTrickleCharging;
 
-        this->distance_sensor->publish_state(distance);
-        this->voltage_sensor->publish_state(voltage);
-        this->current_sensor->publish_state(current);
-        this->charge_sensor->publish_state(charge);
-        this->capacity_sensor->publish_state(capacity);
-        this->chargingState_sensor->publish_state(chargingState);
-        this->dockedState_sensor->publish_state(dockedState);
-        this->cleaningState_sensor->publish_state(cleaningState);
+        if (this->distance_sensor->state != distance) {
+            this->distance_sensor->publish_state(distance);
+        } 
+        if (this->voltage_sensor->state != voltage) {
+            this->voltage_sensor->publish_state(voltage);
+        } 
+        if (this->current_sensor->state != current) {
+            this->current_sensor->publish_state(current);
+        } 
+        if (this->charge_sensor->state != charge) {
+            this->charge_sensor->publish_state(charge);
+        } 
+        if (this->capacity_sensor->state != capacity) {
+            this->capacity_sensor->publish_state(capacity);
+        } 
+        if (this->chargingState_sensor->state != chargingState) {
+            this->chargingState_sensor->publish_state(chargingState);
+        } 
+        if (this->dockedState_sensor->state != dockedState) {
+            this->dockedState_sensor->publish_state(dockedState);
+        } 
+        if (this->cleaningState_sensor->state != cleaningState) {
+            this->cleaningState_sensor->publish_state(cleaningState);
+        } 
     }
 };
