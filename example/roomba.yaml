@@ -1,7 +1,7 @@
-esphomeyaml:
+esphome:
   name: roomba
   platform: ESP8266
-  board: esp01_1m
+  board: d1_mini
   includes:
     - ../ESPHomeRoombaComponent.h
   libraries:
@@ -59,3 +59,7 @@ custom_component:
     return {custom_roomba};
 
 switch:
+
+binary_sensor: 
+  - platform: status
+    name: "Roomba Status"
