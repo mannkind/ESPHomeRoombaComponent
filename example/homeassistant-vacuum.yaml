@@ -1,0 +1,14 @@
+---
+- platform: mqtt
+  name: "Roomba"
+  schema: legacy
+  availability_topic: "roomba_001/status"
+  command_topic: "roomba_001/command"
+  battery_level_topic: "roomba_001/sensor/roomba_charge/state"
+  battery_level_template: "{{ value }}"
+  charging_topic: "roomba_001/binary_sensor/roomba_charging/state"
+  charging_template: "{{ value }}"
+  cleaning_topic: "roomba_001/binary_sensor/roomba_cleaning/state"
+  cleaning_template: "{{ value }}"
+  docked_topic: "roomba_001/binary_sensor/roomba_docked/state"
+  docked_template: "{{ value }}"

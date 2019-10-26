@@ -1,65 +1,68 @@
 esphome:
-  name: roomba
+  name: roomba_001
   platform: ESP8266
   board: d1_mini
   includes:
     - ../ESPHomeRoombaComponent.h
   libraries:
-    - Roomba=http://www.airspayce.com/mikem/arduino/Roomba/Roomba-1.4.zip
+    - Roomba=https://github.com/Apocrathia/Roomba
+
+substitutions:
+  name: "Roomba"
+  init: 'RoombaComponent::instance("roomba_001/command", 4, 1000);'
 
 wifi:
-  ssid: "My Wifi SSID"
-  password: "My Wifi Password"
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
 
 mqtt:
-  broker: "test.mosquitto.org"
+  broker: !secret mqtt_broker
   discovery: true
 
 logger:
+  baud_rate: 0
   level: info
 
 ota:
 
 custom_component:
- - lambda: |-
-    auto custom_roomba = new RoombaComponent(
-        "Roomba Distance",
-        "Roomba Voltage",
-        "Roomba Current",
-        "Roomba Charge",
-        "Roomba Capacity",
-        "Roomba Charging",
-        "Roomba Docked",
-        "Roomba Cleaning",
-        "Roomba On",
-        "Roomba Off",
-        "Roomba Dock",
-        "Roomba Locate",
-        "Roomba Spot Clean",
-        "roomba/command", /* command_topic */
-        4,                /* BRC Pin */
-        5000              /* Update Interval */
-      );
+  - lambda: |-
+      auto r = ${init}
+      return {r};
 
-    App.register_component(custom_roomba);
-    App.register_sensor(custom_roomba->distance_sensor);
-    App.register_sensor(custom_roomba->voltage_sensor);
-    App.register_sensor(custom_roomba->current_sensor);
-    App.register_sensor(custom_roomba->charge_sensor);
-    App.register_sensor(custom_roomba->capacity_sensor);
-    App.register_binary_sensor(custom_roomba->chargingState_sensor);
-    App.register_binary_sensor(custom_roomba->dockedState_sensor);
-    App.register_binary_sensor(custom_roomba->cleaningState_sensor);
-    App.register_switch(custom_roomba->on_switch);
-    App.register_switch(custom_roomba->off_switch);
-    App.register_switch(custom_roomba->dock_switch);
-    App.register_switch(custom_roomba->locate_switch);
-    App.register_switch(custom_roomba->spot_switch);
+sensor:
+ - platform: custom
+   lambda: |-
+      auto r = ${init}
+      return {r->distanceSensor, r->voltageSensor, r->currentSensor, r->chargeSensor, r->capacitySensor};
 
-    return {custom_roomba};
-
-switch:
+   sensors:
+     - name: "${name} distance"
+       unit_of_measurement: "mm"
+       accuracy_decimals: 0
+     - name: "${name} voltage"
+       unit_of_measurement: "mV"
+       accuracy_decimals: 0
+     - name: "${name} current"
+       unit_of_measurement: "mA"
+       accuracy_decimals: 0
+     - name: "${name} charge"
+       unit_of_measurement: "mAh"
+       accuracy_decimals: 0
+     - name: "${name} capacity"
+       unit_of_measurement: "mAh"
+       accuracy_decimals: 0
 
 binary_sensor: 
   - platform: status
-    name: "Roomba Status"
+    name: "{name} Status"
+
+  - platform: custom
+    lambda: |-
+       auto r = ${init}
+       return {r->chargingBinarySensor, r->dockedBinarySensor, r->cleaningBinarySensor};
+
+    binary_sensors:
+      - name: "${name} charging"
+      - name: "${name} docked"
+      - name: "${name} cleaning"

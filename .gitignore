@@ -1,3 +1,4 @@
 .vscode
-example/roomba/.pio*
-example/roomba/.esphomelib_version
+example/.esphome
+example/roomba
+example/secrets.yaml

@@ -1,277 +1,54 @@
 #include "esphome.h"
-#include <Roomba.h>
-using namespace esphomelib;
+#include <roomba.h>
 
 static const char *TAG = "component.Roomba";
-Roomba roomba(&Serial, Roomba::Baud115200);
-void roombaWakeup(uint8_t pin)
-{
-    digitalWrite(pin, HIGH);
-    delay(100);
-    digitalWrite(pin, LOW);
-    delay(500);
-    digitalWrite(pin, HIGH);
-    delay(100);
-}
-
-class RoombaOnSwitch : public switch_::Switch
+class RoombaComponent : public PollingComponent, public CustomMQTTDevice
 {
   protected:
     uint8_t brcPin;
-
-  public:
-    RoombaOnSwitch(const std::string &name, uint8_t brcPin) : switch_::Switch(name)
-    {
-        this->brcPin = brcPin;
-    }
-
-    void write_state(bool state) override
-    {
-        this->publish_state(true);
-        roombaWakeup(this->brcPin);
-        roomba.cover();
-        this->publish_state(false);
-    }
-};
-
-class RoombaOffSwitch : public switch_::Switch
-{
-  protected:
-    uint8_t brcPin;
-
-  public:
-    RoombaOffSwitch(const std::string &name, uint8_t brcPin) : switch_::Switch(name)
-    {
-        this->brcPin = brcPin;
-    }
-
-    void write_state(bool state) override
-    {
-        this->publish_state(true);
-        roombaWakeup(this->brcPin);
-        roomba.cover();
-        this->publish_state(false);
-    }
-};
-
-class RoombaDockSwitch : public switch_::Switch
-{
-  protected:
-    uint8_t brcPin;
-
-  public:
-    RoombaDockSwitch(const std::string &name, uint8_t brcPin) : switch_::Switch(name)
-    {
-        this->brcPin = brcPin;
-    }
-
-    void write_state(bool state) override
-    {
-        this->publish_state(true);
-        roombaWakeup(this->brcPin);
-        roomba.dock();
-        this->publish_state(false);
-    }
-};
-
-class RoombaLocateSwitch : public switch_::Switch
-{
-  protected:
-    uint8_t brcPin;
-    uint8_t song;
-
-  public:
-    RoombaLocateSwitch(const std::string &name, uint8_t brcPin, uint8_t song) : switch_::Switch(name)
-    {
-        this->brcPin = brcPin;
-    }
-
-    void write_state(bool state) override
-    {
-        this->publish_state(true);
-        roombaWakeup(this->brcPin);
-        roomba.playSong(this->song);
-        this->publish_state(false);
-    }
-};
-
-class RoombaSpotSwitch : public switch_::Switch
-{
-  protected:
-    uint8_t brcPin;
-
-  public:
-    RoombaSpotSwitch(const std::string &name, uint8_t brcPin) : switch_::Switch(name)
-    {
-        this->brcPin = brcPin;
-    }
-
-    void write_state(bool state) override
-    {
-        this->publish_state(true);
-        roombaWakeup(this->brcPin);
-        roomba.spot();
-        this->publish_state(false);
-    }
-};
-
-class RoombaDistanceSensor : public sensor::Sensor
-{
-  public:
-    RoombaDistanceSensor(const std::string &name) : sensor::Sensor(name) {}
-    std::string unit_of_measurement() override { return "mm"; }
-    int8_t accuracy_decimals() override { return 1; }
-};
-
-class RoombaVoltageSensor : public sensor::Sensor
-{
-  public:
-    RoombaVoltageSensor(const std::string &name) : sensor::Sensor(name) {}
-    std::string unit_of_measurement() override { return "mV"; }
-    int8_t accuracy_decimals() override { return 1; }
-};
-
-class RoombaCurrentSensor : public sensor::Sensor
-{
-  public:
-    RoombaCurrentSensor(const std::string &name) : sensor::Sensor(name) {}
-    std::string unit_of_measurement() override { return "mA"; }
-    int8_t accuracy_decimals() override { return 1; }
-};
-
-class RoombaChargeSensor : public sensor::Sensor
-{
-  public:
-    RoombaChargeSensor(const std::string &name) : sensor::Sensor(name) {}
-    std::string unit_of_measurement() override { return "mAh"; }
-    int8_t accuracy_decimals() override { return 1; }
-};
-
-class RoombaCapacitySensor : public sensor::Sensor
-{
-  public:
-    RoombaCapacitySensor(const std::string &name) : sensor::Sensor(name) {}
-    std::string unit_of_measurement() override { return "mAh"; }
-    int8_t accuracy_decimals() override { return 1; }
-};
-
-class RoombaChargingStateSensor : public binary_sensor::BinarySensor
-{
-  public:
-    RoombaChargingStateSensor(const std::string &name) : binary_sensor::BinarySensor(name) {}
-};
-
-class RoombaDockedStateSensor : public binary_sensor::BinarySensor
-{
-  public:
-    RoombaDockedStateSensor(const std::string &name) : binary_sensor::BinarySensor(name) {}
-};
-
-class RoombaCleaningStateSensor : public binary_sensor::BinarySensor
-{
-  public:
-    RoombaCleaningStateSensor(const std::string &name) : binary_sensor::BinarySensor(name) {}
-};
-
-class RoombaComponent : public PollingComponent
-{
-  protected:
-    uint8_t brcPin;
+    uint32_t updateInterval;
     std::string commandTopic;
+    Roomba roomba;
 
   public:
-    RoombaDistanceSensor *distance_sensor;
-    RoombaVoltageSensor *voltage_sensor;
-    RoombaCurrentSensor *current_sensor;
-    RoombaChargeSensor *charge_sensor;
-    RoombaCapacitySensor *capacity_sensor;
-    RoombaChargingStateSensor *chargingState_sensor;
-    RoombaDockedStateSensor *dockedState_sensor;
-    RoombaCleaningStateSensor *cleaningState_sensor;
-    RoombaOnSwitch *on_switch;
-    RoombaOffSwitch *off_switch;
-    RoombaDockSwitch *dock_switch;
-    RoombaLocateSwitch *locate_switch;
-    RoombaSpotSwitch *spot_switch;
+    Sensor *distanceSensor;
+    Sensor *voltageSensor;
+    Sensor *currentSensor;
+    Sensor *chargeSensor;
+    Sensor *capacitySensor;
+    BinarySensor *chargingBinarySensor;
+    BinarySensor *dockedBinarySensor;
+    BinarySensor *cleaningBinarySensor;
 
-    RoombaComponent(
-        const std::string &distanceName,
-        const std::string &voltageName,
-        const std::string &currentName,
-        const std::string &chargeName,
-        const std::string &capacityName,
-        const std::string &chargingStateName,
-        const std::string &dockedStateName,
-        const std::string &cleaningStateName,
-        const std::string &onSwitchName,
-        const std::string &offSwitchName,
-        const std::string &dockSwitchName,
-        const std::string &locateSwitchName,
-        const std::string &spotSwitchName,
-        const std::string &commandTopic,
-        uint8_t brcPin,
-        uint32_t update_interval)
-        : PollingComponent(update_interval)
+    static RoombaComponent* instance(const std::string &commandTopic, uint8_t brcPin, uint32_t updateInterval)
     {
-        this->brcPin = brcPin;
-        this->distance_sensor = new RoombaDistanceSensor(distanceName);
-        this->voltage_sensor = new RoombaVoltageSensor(voltageName);
-        this->current_sensor = new RoombaCurrentSensor(currentName);
-        this->charge_sensor = new RoombaChargeSensor(chargeName);
-        this->capacity_sensor = new RoombaCapacitySensor(capacityName);
-        this->chargingState_sensor = new RoombaChargingStateSensor(chargingStateName);
-        this->dockedState_sensor = new RoombaDockedStateSensor(dockedStateName);
-        this->cleaningState_sensor = new RoombaCleaningStateSensor(cleaningStateName);
-        this->on_switch = new RoombaOnSwitch(onSwitchName, brcPin);
-        this->off_switch = new RoombaOffSwitch(offSwitchName, brcPin);
-        this->dock_switch = new RoombaDockSwitch(dockSwitchName, brcPin);
-        this->locate_switch = new RoombaLocateSwitch(locateSwitchName, brcPin, 1);
-        this->spot_switch = new RoombaSpotSwitch(spotSwitchName, brcPin);
-
-        this->commandTopic = commandTopic;
+        static RoombaComponent* INSTANCE = new RoombaComponent(commandTopic, brcPin, updateInterval);
+        return INSTANCE;
     }
 
     void setup() override
     {
-        ESP_LOGD(TAG, "Setting up Roomba.");
+        ESP_LOGD(TAG, "Setting up roomba.");
         pinMode(this->brcPin, OUTPUT);
         digitalWrite(this->brcPin, HIGH);
 
-        roomba.start();
+        this->roomba.start();
 
         ESP_LOGD(TAG, "Attempting to subscribe to MQTT.");
-        mqtt::global_mqtt_client->subscribe(this->commandTopic, [&](const std::string &topic, const std::string &payload) {
-            ESP_LOGD(TAG, "Got values %s", payload.c_str());
-            if (payload == "turn_on")
-            {
-                this->on_switch->turn_on();
-            }
-            else if (payload == "turn_off")
-            {
-                this->off_switch->turn_on();
-            }
-            else if (payload == "dock")
-            {
-                this->dock_switch->turn_on();
-            }
-            else if (payload == "locate")
-            {
-                this->locate_switch->turn_on();
-            }
-            else if (payload == "spot")
-            {
-                this->spot_switch->turn_on();
-            }
-            else
-            {
-                ESP_LOGW(TAG, "Received unknown status payload: %s", payload.c_str());
-                this->status_momentary_warning("state", 5000);
-            }
-        });
+
+        subscribe(this->commandTopic, &RoombaComponent::on_message);
     }
 
     void update() override
     {
+	    // static unsigned long lastRun = 0;
+        // unsigned long currentRun = millis();
+        // if(currentRun - lastRun < this->updateInterval) 
+        // {
+        //     return;
+        // }
+        // lastRun = currentRun;
+
         ESP_LOGD(TAG, "Attempting to update sensor values.");
 
         int16_t distance;
@@ -300,10 +77,10 @@ class RoombaComponent : public PollingComponent
         uint8_t values[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
         // Serial reading timeout -- https://community.home-assistant.io/t/add-wifi-to-an-older-roomba/23282/52
-        bool success = roomba.getSensorsList(sensors, sizeof(sensors), values, sizeof(values));
+        bool success = this->roomba.getSensorsList(sensors, sizeof(sensors), values, sizeof(values));
         if (!success)
         {
-            ESP_LOGD(TAG, "Unable to read sensors from the Roomba.");
+            ESP_LOGD(TAG, "Unable to read sensors from the roomba.");
             return;
         }
 
@@ -318,29 +95,86 @@ class RoombaComponent : public PollingComponent
         dockedState = current > -50;
         chargingState = charging == Roomba::ChargeStateReconditioningCharging || charging == Roomba::ChargeStateFullChanrging || charging == Roomba::ChargeStateTrickleCharging;
 
-        if (this->distance_sensor->state != distance) {
-            this->distance_sensor->publish_state(distance);
+        if (this->distanceSensor->state != distance) {
+            this->distanceSensor->publish_state(distance);
         } 
-        if (this->voltage_sensor->state != voltage) {
-            this->voltage_sensor->publish_state(voltage);
+        if (this->voltageSensor->state != voltage) {
+            this->voltageSensor->publish_state(voltage);
         } 
-        if (this->current_sensor->state != current) {
-            this->current_sensor->publish_state(current);
+        if (this->currentSensor->state != current) {
+            this->currentSensor->publish_state(current);
         } 
-        if (this->charge_sensor->state != charge) {
-            this->charge_sensor->publish_state(charge);
+        if (this->chargeSensor->state != charge) {
+            this->chargeSensor->publish_state(charge);
         } 
-        if (this->capacity_sensor->state != capacity) {
-            this->capacity_sensor->publish_state(capacity);
+        if (this->capacitySensor->state != capacity) {
+            this->capacitySensor->publish_state(capacity);
         } 
-        if (this->chargingState_sensor->state != chargingState) {
-            this->chargingState_sensor->publish_state(chargingState);
+        if (this->chargingBinarySensor->state != chargingState) {
+            this->chargingBinarySensor->publish_state(chargingState);
         } 
-        if (this->dockedState_sensor->state != dockedState) {
-            this->dockedState_sensor->publish_state(dockedState);
+        if (this->dockedBinarySensor->state != dockedState) {
+            this->dockedBinarySensor->publish_state(dockedState);
         } 
-        if (this->cleaningState_sensor->state != cleaningState) {
-            this->cleaningState_sensor->publish_state(cleaningState);
+        if (this->cleaningBinarySensor->state != cleaningState) {
+            this->cleaningBinarySensor->publish_state(cleaningState);
         } 
+    }
+
+    void on_message(const std::string &payload) 
+    {
+        ESP_LOGD(TAG, "Got values %s", payload.c_str());
+
+        // Roomba Wakeup
+        digitalWrite(this->brcPin, HIGH);
+        delay(100);
+        digitalWrite(this->brcPin, LOW);
+        delay(500);
+        digitalWrite(this->brcPin, HIGH);
+        delay(100);
+
+        if (payload == "turn_on")
+        {
+            this->roomba.cover();
+        }
+        else if (payload == "turn_off")
+        {
+            this->roomba.cover();
+        }
+        else if (payload == "dock")
+        {
+            this->roomba.dock();
+        }
+        else if (payload == "locate")
+        {
+            this->roomba.playSong(1);
+        }
+        else if (payload == "spot")
+        {
+            this->roomba.spot();
+        }
+        else
+        {
+            ESP_LOGW(TAG, "Received unknown status payload: %s", payload.c_str());
+            this->status_momentary_warning("state", 5000);
+        }
+    }
+
+  private: 
+    RoombaComponent(const std::string &commandTopic, uint8_t brcPin, uint32_t updateInterval) : 
+        PollingComponent(updateInterval), roomba(&Serial, Roomba::Baud115200)
+    {
+        this->brcPin = brcPin;
+        this->updateInterval = updateInterval;
+        this->commandTopic = commandTopic;
+        
+        this->distanceSensor = new Sensor();
+        this->voltageSensor = new Sensor();
+        this->currentSensor = new Sensor();
+        this->chargeSensor = new Sensor();
+        this->capacitySensor = new Sensor();
+        this->chargingBinarySensor = new BinarySensor();
+        this->dockedBinarySensor = new BinarySensor();
+        this->cleaningBinarySensor = new BinarySensor();
     }
 };

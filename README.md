@@ -1,9 +1,7 @@
 # Roomba Component for ESPHome
 
 A barebones wrapper to enable control of a Roomba via ESPHome.
-Tested with ESPHome 1.12.1, and a Roomba 650 w/a Wemos D1 Mini installed.
-
-I apologize for how barebones this repo is; as soon as I got the Roomba/ESPHome component working, I was distracted by other projects. I hope to come back to this someday.
+Tested with ESPHome 1.13.x, and a Roomba 650 w/a Wemos D1 Mini installed.
 
 ## Hardware
 
@@ -19,4 +17,7 @@ I should note that like others, I initially had trouble reading the sensor data 
 
 ## Software Setup/Use
 
-Take a look at the example directory for a fully working example (very close to my setup).
+Take a look at the example directory for a fully working example.
+
+* <example/esphome.yaml> - Contains the bits needed for ESPHome.
+* <example/homeassistant-vacuum.yaml> - Contains the bits needed to integrate as a "MQTT Vacuum" in Home Assistant
