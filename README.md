@@ -1,6 +1,6 @@
 # Roomba Component for ESPHome
 
-A barebones wrapper to enable control of a Roomba via ESPHome.
+A barebones wrapper to enable control of a Roomba via MQTT with ESPHome.
 Tested with ESPHome 1.13.x, and a Roomba 650 w/a Wemos D1 Mini installed.
 
 ## Hardware
