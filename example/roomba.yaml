@@ -9,7 +9,7 @@ esphome:
 
 substitutions:
   name: "Roomba"
-  init: 'RoombaComponent::instance("roomba_001/command", 4, 1000);'
+  init: 'RoombaComponent::instance("roomba_001/state", "roomba_001/command", 4, 1000);'
 
 wifi:
   ssid: !secret wifi_ssid

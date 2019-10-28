@@ -7,6 +7,7 @@ class RoombaComponent : public PollingComponent, public CustomMQTTDevice
   protected:
     uint8_t brcPin;
     uint32_t updateInterval;
+    std::string stateTopic;
     std::string commandTopic;
     Roomba roomba;
 
@@ -20,9 +21,9 @@ class RoombaComponent : public PollingComponent, public CustomMQTTDevice
     BinarySensor *dockedBinarySensor;
     BinarySensor *cleaningBinarySensor;
 
-    static RoombaComponent* instance(const std::string &commandTopic, uint8_t brcPin, uint32_t updateInterval)
+    static RoombaComponent* instance(const std::string &stateTopic, const std::string &commandTopic, uint8_t brcPin, uint32_t updateInterval)
     {
-        static RoombaComponent* INSTANCE = new RoombaComponent(commandTopic, brcPin, updateInterval);
+        static RoombaComponent* INSTANCE = new RoombaComponent(stateTopic, commandTopic, brcPin, updateInterval);
         return INSTANCE;
     }
 
@@ -41,14 +42,6 @@ class RoombaComponent : public PollingComponent, public CustomMQTTDevice
 
     void update() override
     {
-	    // static unsigned long lastRun = 0;
-        // unsigned long currentRun = millis();
-        // if(currentRun - lastRun < this->updateInterval) 
-        // {
-        //     return;
-        // }
-        // lastRun = currentRun;
-
         ESP_LOGD(TAG, "Attempting to update sensor values.");
 
         int16_t distance;
@@ -60,6 +53,7 @@ class RoombaComponent : public PollingComponent, public CustomMQTTDevice
         bool cleaningState;
         bool dockedState;
         bool chargingState;
+        bool publishJson;
         // Flush serial buffers
         while (Serial.available())
         {
@@ -95,30 +89,58 @@ class RoombaComponent : public PollingComponent, public CustomMQTTDevice
         dockedState = current > -50;
         chargingState = charging == Roomba::ChargeStateReconditioningCharging || charging == Roomba::ChargeStateFullChanrging || charging == Roomba::ChargeStateTrickleCharging;
 
+        // Only publish new states if there was a change
         if (this->distanceSensor->state != distance) {
             this->distanceSensor->publish_state(distance);
-        } 
+        }
+
         if (this->voltageSensor->state != voltage) {
             this->voltageSensor->publish_state(voltage);
-        } 
+        }
+
         if (this->currentSensor->state != current) {
             this->currentSensor->publish_state(current);
-        } 
+        }
+
         if (this->chargeSensor->state != charge) {
             this->chargeSensor->publish_state(charge);
-        } 
+        }
+
         if (this->capacitySensor->state != capacity) {
             this->capacitySensor->publish_state(capacity);
-        } 
+        }
+
         if (this->chargingBinarySensor->state != chargingState) {
             this->chargingBinarySensor->publish_state(chargingState);
-        } 
+        }
+
         if (this->dockedBinarySensor->state != dockedState) {
             this->dockedBinarySensor->publish_state(dockedState);
-        } 
+        }
+
         if (this->cleaningBinarySensor->state != cleaningState) {
             this->cleaningBinarySensor->publish_state(cleaningState);
         } 
+
+        static std::string lastBatteryLevel = "0.0";
+        static std::string lastState;
+        std::string batteryLevel = value_accuracy_to_string(100.0 * ((1.0 * charge) / (1.0 * capacity)), 2);
+        std::string state = cleaningState ? "cleaning" : 
+                            dockedState ? "docked" :
+                            chargingState ? "idle" :
+                            "idle";
+
+        // Publish to the state topic a json document; necessary for the 'state' schema
+        if (batteryLevel != lastBatteryLevel || state != lastState) {
+            lastBatteryLevel = batteryLevel;
+            lastState = state;
+
+            publish_json(this->stateTopic, [=](JsonObject &root) {
+                root["battery_level"] = parse_float(batteryLevel).value();
+                root["state"] = state;
+                root["fan_speed"] = "off";
+            });
+        }
     }
 
     void on_message(const std::string &payload) 
@@ -133,15 +155,12 @@ class RoombaComponent : public PollingComponent, public CustomMQTTDevice
         digitalWrite(this->brcPin, HIGH);
         delay(100);
 
-        if (payload == "turn_on")
+        if (payload == "turn_on" || payload == "turn_off" || 
+            payload == "start" || payload == "stop")
         {
             this->roomba.cover();
         }
-        else if (payload == "turn_off")
-        {
-            this->roomba.cover();
-        }
-        else if (payload == "dock")
+        else if (payload == "dock" || payload == "return_to_base")
         {
             this->roomba.dock();
         }
@@ -149,7 +168,7 @@ class RoombaComponent : public PollingComponent, public CustomMQTTDevice
         {
             this->roomba.playSong(1);
         }
-        else if (payload == "spot")
+        else if (payload == "spot" || payload == "clean_spot")
         {
             this->roomba.spot();
         }
@@ -158,14 +177,18 @@ class RoombaComponent : public PollingComponent, public CustomMQTTDevice
             ESP_LOGW(TAG, "Received unknown status payload: %s", payload.c_str());
             this->status_momentary_warning("state", 5000);
         }
+
+        delay(500);
+        this->update();
     }
 
   private: 
-    RoombaComponent(const std::string &commandTopic, uint8_t brcPin, uint32_t updateInterval) : 
+    RoombaComponent(const std::string &stateTopic, const std::string &commandTopic, uint8_t brcPin, uint32_t updateInterval) : 
         PollingComponent(updateInterval), roomba(&Serial, Roomba::Baud115200)
     {
         this->brcPin = brcPin;
         this->updateInterval = updateInterval;
+        this->stateTopic = stateTopic;
         this->commandTopic = commandTopic;
         
         this->distanceSensor = new Sensor();
