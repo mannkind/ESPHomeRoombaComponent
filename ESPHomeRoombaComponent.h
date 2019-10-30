@@ -1,5 +1,5 @@
 #include "esphome.h"
-#include <roomba.h>
+#include <Roomba.h>
 
 static const char *TAG = "component.Roomba";
 class RoombaComponent : public PollingComponent, public CustomMQTTDevice
