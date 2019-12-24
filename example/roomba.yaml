@@ -9,6 +9,7 @@ esphome:
 
 substitutions:
   name: "Roomba"
+  # state topic, command topic, BRC pin, polling interval
   init: 'RoombaComponent::instance("roomba_001/state", "roomba_001/command", 4, 1000);'
 
 wifi:
